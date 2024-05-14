@@ -5,7 +5,12 @@ import random
 
 class Othello:
     def __init__(self):
-        self.board = [[' ' for _ in range(8)] for _ in range(8)]
+        self.board = []
+        for _ in range(8):
+            row = []
+            for _ in range(8):
+                row.append(' ')
+            self.board.append(row)
         self.board[3][3] = 'W'
         self.board[4][4] = 'W'
         self.board[3][4] = 'B'
@@ -28,11 +33,19 @@ class Othello:
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (-1, -1), (-1, 1), (1, -1)]
         for dr, dc in directions:
             r, c = row + dr, col + dc
-            while 0 <= r < 8 and 0 <= c < 8 and self.board[r][c] == self.opponent():
-                r += dr
-                c += dc
-            if 0 <= r < 8 and 0 <= c < 8 and self.board[r][c] == self.current_player:
-                return True
+            found_opponent = False
+            while 0 <= r < 8 and 0 <= c < 8:
+                if self.board[r][c] == ' ':
+                    break
+                elif self.board[r][c] == self.current_player:
+                    if found_opponent:
+                        return True
+                    else:
+                        break
+                else:
+                    found_opponent = True
+                    r += dr
+                    c += dc
         return False
 
     def make_move(self, row, col):
@@ -62,7 +75,11 @@ class Othello:
         return black_count, white_count
 
     def is_game_over(self):
-        return not any(self.is_valid_move(row, col) for row in range(8) for col in range(8))
+        for row in range(8):
+            for col in range(8):
+                if self.is_valid_move(row, col) :
+                    return False
+        return True
 
     def determine_winner(self):
         black_count, white_count = self.count_discs()
@@ -163,8 +180,10 @@ class OthelloGUI:
             bg_color = 'black'
         elif color == 'W':
             bg_color = 'white'
+        elif (row, col) in self.game.get_valid_moves():
+            bg_color = 'light green'
         else:
-            bg_color = 'green'
+            bg_color = 'dark green'
         self.buttons[row][col].config(bg=bg_color)
 
     def make_move(self, row, col):
@@ -189,11 +208,11 @@ class OthelloGUI:
 
     def ai_move(self):
         if self.difficulty_level.get() == 'easy':
-            depth = 2
+            depth = 1
         elif self.difficulty_level.get() == 'medium':
             depth = 3
         else:
-            depth = 5  # Increased depth for hard level
+            depth = 5
         _, best_move = self.game.play_alphabeta(depth)
         self.game.make_move(best_move[0], best_move[1])
         self.update_board()
