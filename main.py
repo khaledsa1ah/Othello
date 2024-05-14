@@ -30,7 +30,7 @@ class Othello:
             return False
         if self.board[row][col] != ' ':
             return False
-        directions = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (-1, -1), (-1, 1), (1, -1)]
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         for dr, dc in directions:
             r, c = row + dr, col + dc
             found_opponent = False
@@ -52,7 +52,7 @@ class Othello:
         if not self.is_valid_move(row, col):
             return False
         self.board[row][col] = self.current_player
-        directions = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (-1, -1), (-1, 1), (1, -1)]
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         for dr, dc in directions:
             r, c = row + dr, col + dc
             to_flip = []
@@ -75,11 +75,18 @@ class Othello:
         return black_count, white_count
 
     def is_game_over(self):
+        flag = True
         for row in range(8):
             for col in range(8):
-                if self.is_valid_move(row, col) :
-                    return False
-        return True
+                if self.is_valid_move(row, col):
+                    flag = False
+        self.current_player = self.opponent()
+        for row in range(8):
+            for col in range(8):
+                if self.is_valid_move(row, col):
+                    flag = False
+        self.current_player = self.opponent()
+        return flag
 
     def determine_winner(self):
         black_count, white_count = self.count_discs()
@@ -188,13 +195,20 @@ class OthelloGUI:
 
     def make_move(self, row, col):
         if self.game.current_player == 'B':  # Only allow human player to move when it's their turn
-            if self.game.make_move(row, col):
-                self.update_board()
-                self.update_counts()
-                if self.game.is_game_over():
-                    self.show_winner()
-                else:
-                    self.master.after(1000, self.ai_move)  # Wait for 1 second before AI move
+            valid_moves = self.game.get_valid_moves()
+            if not valid_moves:
+                print("No black moves")
+                self.game.current_player = 'W'
+                self.master.after(500, self.ai_move)
+            else:
+                print("Black moves")
+                if self.game.make_move(row, col):
+                    self.update_board()
+                    self.update_counts()
+                    if self.game.is_game_over():
+                        self.show_winner()
+                    else:
+                        self.master.after(500, self.ai_move)  # Wait for 1 second before AI move
 
     def update_board(self):
         for row in range(8):
@@ -214,7 +228,13 @@ class OthelloGUI:
         else:
             depth = 5
         _, best_move = self.game.play_alphabeta(depth)
-        self.game.make_move(best_move[0], best_move[1])
+        if best_move is None:
+            print("No White Moves")
+            self.game.current_player = 'B'
+        else:
+            print("White Moves")
+            self.game.make_move(best_move[0], best_move[1])
+
         self.update_board()
         self.update_counts()
         if self.game.is_game_over():
